@@ -2,6 +2,7 @@ import {mount, createLocalVue} from '@vue/test-utils'
 import Vuex from 'vuex'
 import VueRouter from 'vue-router'
 import Posts from "../../src/components/Posts.vue";
+import moment from 'moment';
 
 const localVue = createLocalVue();
 
@@ -100,7 +101,53 @@ describe('Posts', () => {
 
     const wrapper = mount(Posts, {router, store, localVue});
 
-    it('1 == 1', function () {
-        expect(true).toBe(true)
+    it('correct amount of posts are rendered', function () {
+        let posts = wrapper.findAll('.post');
+        expect(posts.length).toBe(testData.length)
+    });
+
+    it('correctly renders image or video if media property is present otherwise does not', function () {
+        let posts = wrapper.findAll('.post');
+        // We expect posts to rendered in the same order as they are passed in
+        testData.forEach((testPost, i) => {
+            let post = posts.at(i);
+            const postImage = post.find('.post-image');
+            if (!testPost.media) {
+                // Make sure no the container for media is rendered
+                expect(postImage.exists()).toBe(false);
+            } 
+            else {
+                // Make sure the container for media is rendered
+                expect(postImage.exists()).toBe(true);
+
+                // Make sure it contains correct link
+                expect(postImage.html()).toContain(testPost.media.url);
+
+                // Make sure correct type of media is rendered
+                if (testPost.media.type === 'image') {
+                    expect(postImage.find('img').exists()).toBe(true);
+                }
+                else if (testPost.media.type === 'video'){
+                    expect(postImage.find('video').exists()).toBe(true);
+                }
+            }
+        })
+    });
+
+
+    it('displays create time in correct format', function() {
+        let posts = wrapper.findAll('.post');
+        testData.forEach((testPost, i) => {
+            let post = posts.at(i);
+            let dateContainer = post.find('.post-author');
+
+            // Create correctly formatted date
+            let testDate = moment(testPost.createTime, 'YYYY-MM-DD hh:mm:ss');
+            let correctDate = testDate.format('dddd, MMMM D, YYYY h:mm A')
+
+            // Check that container exists and it includes correctly formatted date
+            expect(dateContainer.exists()).toBe(true);
+            expect(dateContainer.html()).toContain(correctDate);
+        })
     });
 });
