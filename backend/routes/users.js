@@ -90,7 +90,6 @@ router.post('/login', (request, response) => {
         })
     });
 });
-n
 // Protected endpoints
 router.get('/', authorize, (request, response) => {
 
