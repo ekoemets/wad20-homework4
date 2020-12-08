@@ -14,7 +14,6 @@ module.exports = (request, response, next) => {
         const token  = request.headers.authorization.split(' ')[1];
         const payload = jwt.verifyAccessToken(token);
         if (payload) {
-            console.log(payload.id)
             UserModel.getById(payload.id, (user) => {
                 request.currentUser = user;
                 next();
