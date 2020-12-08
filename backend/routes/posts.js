@@ -1,3 +1,4 @@
+const { text } = require('express');
 const express = require('express');
 const router = express.Router();
 const authorize = require('../middlewares/authorize');
@@ -30,11 +31,12 @@ router.post('/', authorize,  (request, response) => {
 
     //url, id, media type,  post text
     let params = {
-        postID = request.body.id,
-        postURL: request.body.media.url,
-        mediaType: request.body.media.type,
-        userID: request.body.userId,
-        postText: request.body.text
+        userId: request.currentUser.id,
+        text: request.body.text,
+        media:{
+            type: request.body.media.type,
+            url: request.body.media.url,
+        },
     };
 
     PostModel.create(params, () => {
@@ -51,7 +53,7 @@ router.post('/', authorize,  (request, response) => {
     };
 
     //check if input is valid
-    if ((mediaType && !postURL || !mediaType && postURL) || !postText) {
+    if ((params.media.type && !params.media.url || !params.media.typ && params.media.url) || !params.text) {
         response.status(400).json(noInput);
         return;
     }
@@ -63,10 +65,17 @@ router.post('/', authorize,  (request, response) => {
         }
 
         response.json({
-            userID: post.userId,
-            mediaType: post.media.type,
-            postText: post.text,
-            postURL: post.media.url,
+            //userID: post.userId,
+            //mediaType: post.media.type,
+            //postText: post.text,
+            //postURL: post.media.url,
+
+            userId: request.currentUser.id,
+            text: request.body.text,
+            media:{
+                type: request.body.media.type,
+                url: request.body.media.url,
+            },
             accessToken: jwt.createAccessToken({id: post.id}),
         })
     });
@@ -77,7 +86,7 @@ router.post('/', authorize,  (request, response) => {
 router.put('/:postId/likes', authorize, (request, response) => {
 
     // Endpoint for current user to like a post
-    PostModel.like(request.body.userId, request.body.id, (post) =>{
+    PostModel.like(request.currentUser.id, request.body.id, (post) =>{
         response.status(200).json(post)
     })
 });
@@ -85,7 +94,7 @@ router.put('/:postId/likes', authorize, (request, response) => {
 router.delete('/:postId/likes', authorize, (request, response) => {
 
     // Endpoint for current user to unlike a post
-    PostModel.unlike(request.body.userId, request.body.id, (post)=>{
+    PostModel.unlike(request.currentUser.id, request.body.id, (post)=>{
         response.status(200).json(post)
     })
 });
