@@ -57,27 +57,9 @@ router.post('/', authorize,  (request, response) => {
         response.status(400).json(noInput);
         return;
     }
-
-    PostModel.getByIds(postID, userID, (post) => {
-        if (!post) {
-            response.status(404).json(noPost);
-            return;
-        }
-
-        response.json({
-            //userID: post.userId,
-            //mediaType: post.media.type,
-            //postText: post.text,
-            //postURL: post.media.url,
-
-            userId: request.currentUser.id,
-            text: request.body.text,
-            media:{
-                type: request.body.media.type,
-                url: request.body.media.url,
-            },
-            accessToken: jwt.createAccessToken({id: post.id}),
-        })
+    PostModel.create(params, () =>{
+        response.status(200).json()
+        return;
     });
 
 });
