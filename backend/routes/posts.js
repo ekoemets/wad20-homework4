@@ -26,18 +26,68 @@ router.post('/', authorize,  (request, response) => {
 
     // Endpoint to create a new post
 
+    //todo: use getallforuser?
+
+    //url, id, media type,  post text
+    let params = {
+        postID = request.body.id,
+        postURL: request.body.media.url,
+        mediaType: request.body.media.type,
+        userID: request.body.userId,
+        postText: request.body.text
+    };
+
+    PostModel.create(params, () => {
+        response.status(201).json()
+    });
+
+    const noPost = {
+        code: 'invalid_credentials',
+        message: 'Post with specified info cannot be found'
+    }
+    const noInput = {
+        code: 'none_or_invalid_input',
+        message: 'Please provide required info for post creation'
+    };
+
+    //check if input is valid
+    if ((mediaType && !postURL || !mediaType && postURL) || !postText) {
+        response.status(400).json(noInput);
+        return;
+    }
+
+    PostModel.getByIds(postID, userID, (post) => {
+        if (!post) {
+            response.status(404).json(noPost);
+            return;
+        }
+
+        response.json({
+            userID: post.userId,
+            mediaType: post.media.type,
+            postText: post.text,
+            postURL: post.media.url,
+            accessToken: jwt.createAccessToken({id: post.id}),
+        })
+    });
+
 });
 
 
 router.put('/:postId/likes', authorize, (request, response) => {
 
     // Endpoint for current user to like a post
+    PostModel.like(request.body.userId, request.body.id, (post) =>{
+        response.status(200).json(post)
+    })
 });
 
 router.delete('/:postId/likes', authorize, (request, response) => {
 
     // Endpoint for current user to unlike a post
-
+    PostModel.unlike(request.body.userId, request.body.id, (post)=>{
+        response.status(200).json(post)
+    })
 });
 
 module.exports = router;
