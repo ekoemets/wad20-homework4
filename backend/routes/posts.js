@@ -27,9 +27,6 @@ router.post('/', authorize,  (request, response) => {
 
     // Endpoint to create a new post
 
-    //todo: use getallforuser?
-
-    //url, id, media type,  post text
     let params = {
         userId: request.currentUser.id,
         text: request.body.text,
@@ -39,24 +36,18 @@ router.post('/', authorize,  (request, response) => {
         },
     };
 
-    PostModel.create(params, () => {
-        response.status(201).json()
-    });
-
-    const noPost = {
-        code: 'invalid_credentials',
-        message: 'Post with specified info cannot be found'
-    }
     const noInput = {
         code: 'none_or_invalid_input',
         message: 'Please provide required info for post creation'
     };
 
     //check if input is valid
-    if ((params.media.type && !params.media.url || !params.media.typ && params.media.url) || !params.text) {
+    if ((params.media.type && !params.media.url || 
+        !params.media.type && params.media.url) || !params.text) {
         response.status(400).json(noInput);
         return;
     }
+
     PostModel.create(params, () =>{
         response.status(200).json()
         return;
@@ -71,23 +62,36 @@ router.put('/:postId/likes', authorize, (request, response) => {
     //if post exists
 
     const noPost = {
-        code: 'invalid_credentials',
+        code: 'none_or_invalid_input',
         message: 'Post with specified info cannot be found'
+    };
+
+    const alreadyLiked = {
+        code: 'already_liked',
+        message: 'Post was already liked'
     }
 
-    let currentPostId = request.body.postId
-
-    PostModel.query('SELECT * FROM post WHERE post.id = ?' , [currentPostId], (err, rows) => {
-
-        if(rows.length == 0){
-            response.status(404).json(noPost)
-            return;
+    const postId = request.params.postId;
+    const userId = request.currentUser.id
+    
+    // We don't want to add a record if a post does not exist
+    PostModel.getByIds([postId], null, (posts) => {
+        if (posts.length == 0) {
+            response.status(400).json(noPost);
+        } 
+        else {
+            // We also don't want to add a record if the post is liked already
+            PostModel.getLikesByUserIdAndPostId(userId, postId, (likes) => {
+                if (likes.length != 0) {
+                    response.status(400).json(alreadyLiked);
+                } 
+                else {
+                    PostModel.like(userId, postId, () => {
+                        response.status(200).json()
+                    })
+                }
+            });
         }
-
-        PostModel.like(request.currentUser.id, request.params.postId, () =>{
-            response.status(200).json()
-            return;
-        })
     });
 
 });
@@ -98,25 +102,24 @@ router.delete('/:postId/likes', authorize, (request, response) => {
     // Endpoint for current user to unlike a post
     //if post exists
 
-    const noPost = {
-        code: 'invalid_credentials',
-        message: 'Post with specified info cannot be found'
+    const notLiked = {
+        code: 'not_liked',
+        message: 'Post with specified id was not liked'
     }
 
-    let currentPostId = request.body.postId
+    const userId = request.currentUser.id;
+    const postId = request.params.postId;
 
-    PostModel.query('SELECT * FROM post WHERE post.id = ?' , [currentPostId], (err, rows) => {
-
-        if(rows.length == 0){
-            response.status(404).json(noPost)
-            return;
+    // We don't want to unlike a post that user has not liked
+    PostModel.getLikesByUserIdAndPostId(userId, postId, (likes) => {
+        if (likes.length == 0) {
+            response.status(400).json(notLiked)
+        } else {
+            PostModel.unlike(userId, postId, () => {
+                response.status(200).json()
+            })
         }
-
-        PostModel.unlike(request.currentUser.id, request.params.postId, ()=>{
-            response.status(200).json()
-            return;
-        })
-    });
+    })
 });
 
 module.exports = router;

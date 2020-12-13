@@ -123,17 +123,7 @@ const PostModel = {
 
         return query(statement, [userId, postId], callback);
         
-    },
-
-    query(statement, params, callback) {
-        return db.all(statement, params, function (err, rows) {
-
-            if (err) throw err;
-    
-            callback(rows, this);
-        });
     }
-
 };
 
 function query(statement, params, callback) {
