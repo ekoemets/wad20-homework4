@@ -122,7 +122,16 @@ const PostModel = {
         const statement = 'SELECT * FROM post_like WHERE user_id = ? AND post_id = ? AND delete_time IS NULL;';
 
         return query(statement, [userId, postId], callback);
+        
+    },
 
+    query(statement, params, callback) {
+        return db.all(statement, params, function (err, rows) {
+
+            if (err) throw err;
+    
+            callback(rows, this);
+        });
     }
 
 };
